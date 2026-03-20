@@ -120,3 +120,8 @@ completed == false  →   completed_at IS NULL
 | ⏱ Среднее время выполнения | Среднее значение `completed_at - created_at` |
 
 ---
+
+## Технологии
+
+- logrus
+- cleanenv
