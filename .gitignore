@@ -1,1 +1,4 @@
 .idea
+./config/server/config.yaml
+.env
+main.exe

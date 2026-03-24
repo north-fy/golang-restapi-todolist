@@ -125,3 +125,9 @@ completed == false  →   completed_at IS NULL
 
 - logrus
 - cleanenv
+- pgx
+- migrate
+
+## TODO
+- Поправить ручки
+- Сделать json вывод

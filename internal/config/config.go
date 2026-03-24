@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
@@ -19,9 +20,10 @@ type ServerConfig struct {
 
 type StorageConfig struct {
 	Host     string `yaml:"host" env-default:"localhost"`
-	User     string `yaml:"user" env-required:"true"`
+	Username string `yaml:"username" env-required:"true"`
 	Password string `yaml:"password" env-required:"true"`
-	SslMode  string `yaml:"sslmode" env-default:"disable"`
+	DBname   string `yaml:"dbname" env-required:"true"`
+	Port     int    `yaml:"port" env-default:"5432"`
 }
 
 func MustLoadConfig(path string) Config {
