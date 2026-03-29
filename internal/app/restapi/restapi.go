@@ -4,16 +4,13 @@ import (
 	"net/http"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/config"
+	taskhandler "github.com/north-fy/golang-restapi-todolist/internal/handler/task"
 	userhandler "github.com/north-fy/golang-restapi-todolist/internal/handler/user"
+	"github.com/north-fy/golang-restapi-todolist/internal/service/task"
 	"github.com/north-fy/golang-restapi-todolist/internal/service/user"
 	"github.com/north-fy/golang-restapi-todolist/internal/storage/postgres"
 	"github.com/sirupsen/logrus"
 )
-
-type Storage struct {
-	user user.StorageUser
-	// task task.StorageTask
-}
 
 type RestAPIServer struct {
 	log    *logrus.Logger
@@ -21,19 +18,16 @@ type RestAPIServer struct {
 }
 
 func NewRestAPIServer(log *logrus.Logger, cfg config.StorageConfig) *RestAPIServer {
-	st := Storage{
-		user: postgres.NewStorage(cfg),
-	}
-	//TODO: Implement !!
-	_ = st
+	storage := postgres.NewStorage(cfg)
 
 	serv := RestAPIServer{
 		router: newRouter(),
 	}
 
-	userHandler := userhandler.NewHandlerUser(log, user.NewServiceUser(log, st.user))
+	userHandler := userhandler.NewHandlerUser(log, user.NewServiceUser(log, storage))
+	taskHandler := taskhandler.NewHandlerTask(log, task.NewServiceTask(log, storage))
 
-	serv.router.ConfigureRouter(userHandler)
+	serv.router.ConfigureRouter(userHandler, taskHandler)
 
 	return &serv
 }

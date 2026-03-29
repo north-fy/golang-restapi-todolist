@@ -14,13 +14,14 @@ const (
 	maxLengthNumber  = 15
 )
 
+// TODO: зарефакторить код в одну функцию
 func ValidateName(data string) error {
 	if data == "" && isRequiredName {
-		return errFieldRequired
+		return ErrFieldRequired
 	}
 
 	if minLengthName >= len(data) || len(data) >= maxLengthName {
-		return errCorrectLength
+		return ErrCorrectLength
 	}
 
 	return nil
@@ -28,15 +29,27 @@ func ValidateName(data string) error {
 
 func ValidateNumber(data string) error {
 	if data == "" && isRequiredNumber {
-		return errFieldRequired
+		return ErrFieldRequired
 	}
 
 	if minLengthNumber >= len(data) || len(data) >= maxLengthNumber {
-		return errCorrectLength
+		return ErrCorrectLength
 	}
 
 	if !strings.HasPrefix(data, "+") {
-		return errCorrectNumber
+		return ErrCorrectNumber
+	}
+
+	return nil
+}
+
+func OptValidate(data string, isRequired bool, minLength, maxLength int) error {
+	if data == "" && isRequired {
+		return ErrFieldRequired
+	}
+
+	if minLength >= len(data) || len(data) >= maxLength {
+		return ErrCorrectLength
 	}
 
 	return nil
