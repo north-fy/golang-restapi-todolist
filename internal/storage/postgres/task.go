@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
 	"github.com/north-fy/golang-restapi-todolist/internal/handler/task"
@@ -36,15 +37,16 @@ func (s *Storage) InsertTask(ctx context.Context, task models.Task) (int, error)
 
 func (s *Storage) SelectTask(ctx context.Context, taskID int) (models.Task, error) {
 	query := `
-	SELECT *
+	SELECT title, description, user_id, completed, created_at, completed_at
 	FROM task
 	WHERE id = $1
 	`
 
-	// TODO: Исправить скан тупица :D
-	
-	oneTask := models.Task{}
-	if err := s.conn.QueryRow(ctx, query, taskID).Scan(&oneTask); err != nil {
+	oneTask := models.Task{
+		ID: taskID,
+	}
+	if err := s.conn.QueryRow(ctx, query, taskID).Scan(&oneTask.Title, &oneTask.Description,
+		&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt); err != nil {
 		return models.Task{}, errors.Errorf("%s: %s", op, err.Error())
 	}
 
@@ -53,7 +55,7 @@ func (s *Storage) SelectTask(ctx context.Context, taskID int) (models.Task, erro
 
 func (s *Storage) SelectTasksWithPagination(ctx context.Context, pt task.PaginationTask) ([]models.Task, error) {
 	query := `
-	SELECT *
+	SELECT id, title, description, user_id, completed, created_at, completed_at
 	FROM task
 	ORDER BY id
 	LIMIT $1
@@ -68,8 +70,9 @@ func (s *Storage) SelectTasksWithPagination(ctx context.Context, pt task.Paginat
 
 	for rows.Next() {
 		var oneTask models.Task
-		if err := rows.Scan(&oneTask); err != nil {
-			return tasks, errors.Errorf("%s: %s", op, err.Error())
+		if err := rows.Scan(&oneTask.ID, &oneTask.Title, &oneTask.Description,
+			&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt); err != nil {
+			return tasks, fmt.Errorf("%s: %s", op, err.Error())
 		}
 
 		tasks = append(tasks, oneTask)

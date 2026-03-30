@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
 	"github.com/north-fy/golang-restapi-todolist/pkg/write"
@@ -50,11 +51,11 @@ func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	write.WriteJSON(w, http.StatusCreated, id)
+	write.WriteJSON(w, http.StatusCreated, map[string]int{"id": id})
 }
 
 func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.Atoi(r.PathValue("id"))
+	userID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
 	if err != nil {
 		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
 		h.log.Errorf("%s: %s", op, err.Error())
