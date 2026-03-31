@@ -1,19 +1,19 @@
 package postgres
 
 import (
+	"context"
 	"testing"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
 	"github.com/north-fy/golang-restapi-todolist/internal/storage/postgres/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPostgres_CreateUser(t *testing.T) {
 	tests := []struct {
 		name    string
-		data    interface{}
+		data    models.User
 		require error
 	}{
 		{
@@ -32,38 +32,34 @@ func TestPostgres_CreateUser(t *testing.T) {
 				LastName:    "kov",
 				NumberPhone: "+89128114119",
 			},
-			require: nil, // valid error ?
+			require: nil,
 		},
 		{
 			name:    "empty fields",
 			data:    models.User{},
-			require: nil, // empty err
+			require: nil,
 		},
 		{
 			name: "empty once field",
 			data: models.User{
-				FirstName:   "",
-				LastName:    "kovalev",
+				FirstName:   "ivan",
+				LastName:    "",
 				NumberPhone: "+89128114119",
 			},
-			require: nil, // ??
+			require: nil,
 		},
 	}
 
-	storage := mocks.NewStorageUser(t)
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := new(mocks.StorageUser)
+			mockStorage.On("CreateUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(1, nil)
 
-			user, ok := test.data.(models.User)
-			require.Equal(t, ok, true)
+			id, err := mockStorage.CreateUser(context.Background(), tt.data.FirstName, tt.data.LastName, tt.data.NumberPhone)
 
-			storage.On("CreateUser", t.Context(), user.FirstName,
-				user.LastName, user.NumberPhone).Return(mock.Anything, test.require).Once()
-
-			id, err := storage.CreateUser(t.Context(), user.FirstName,
-				user.LastName, user.NumberPhone)
-			assert.EqualError(t, err, test.require.Error())
-			_ = id
+			assert.Equal(t, tt.require, err)
+			assert.Equal(t, 1, id)
+			mockStorage.AssertExpectations(t)
 		})
 	}
 }
