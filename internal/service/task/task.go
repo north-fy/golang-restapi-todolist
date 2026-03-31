@@ -44,7 +44,12 @@ func NewServiceTask(log *logrus.Logger, storage StorageTask) *ServiceTask {
 }
 
 func (s *ServiceTask) CreateTask(ctx context.Context, task models.Task) (int, error) {
-	if err := ValidateTask(task); err != nil {
+	if err := validate.OptValidate(task.Title, true, 1, 100); err != nil {
+		s.log.Errorf("%s: %s", op, err.Error())
+		return 0, err
+	}
+
+	if err := validate.OptValidate(task.Description, false, 1, 1000); err != nil {
 		s.log.Errorf("%s: %s", op, err.Error())
 		return 0, err
 	}
@@ -89,7 +94,12 @@ func (s *ServiceTask) GetTasksByUser(ctx context.Context, userID int) ([]models.
 }
 
 func (s *ServiceTask) EditTask(ctx context.Context, task models.Task) error {
-	if err := ValidateTask(task); err != nil {
+	if err := validate.OptValidate(task.Title, false, 1, 100); err != nil {
+		s.log.Errorf("%s: %s", op, err.Error())
+		return err
+	}
+
+	if err := validate.OptValidate(task.Description, false, 1, 1000); err != nil {
 		s.log.Errorf("%s: %s", op, err.Error())
 		return err
 	}
@@ -105,18 +115,6 @@ func (s *ServiceTask) EditTask(ctx context.Context, task models.Task) error {
 func (s *ServiceTask) DeleteTask(ctx context.Context, taskID int) error {
 	if err := s.storage.DeleteTask(ctx, taskID); err != nil {
 		s.log.Errorf("%s: %s", op, err.Error())
-		return err
-	}
-
-	return nil
-}
-
-func ValidateTask(t models.Task) error {
-	if err := validate.OptValidate(t.Title, true, 1, 100); err != nil {
-		return err
-	}
-
-	if err := validate.OptValidate(t.Description, false, 1, 1000); err != nil {
 		return err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
 	"github.com/north-fy/golang-restapi-todolist/internal/handler/task"
 	"github.com/pkg/errors"
@@ -45,9 +46,14 @@ func (s *Storage) SelectTask(ctx context.Context, taskID int) (models.Task, erro
 	oneTask := models.Task{
 		ID: taskID,
 	}
-	if err := s.conn.QueryRow(ctx, query, taskID).Scan(&oneTask.Title, &oneTask.Description,
-		&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt); err != nil {
-		return models.Task{}, errors.Errorf("%s: %s", op, err.Error())
+	err := s.conn.QueryRow(ctx, query, taskID).Scan(&oneTask.Title, &oneTask.Description,
+		&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return models.Task{}, fmt.Errorf("%s: %w", op, err)
+		}
+
+		return models.Task{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return oneTask, nil
@@ -113,13 +119,17 @@ func (s *Storage) SelectTasksByUser(ctx context.Context, userID int) ([]models.T
 
 func (s *Storage) UpdateTask(ctx context.Context, task models.Task) error {
 	query := `
-	UPDATE task
-	SET title = COALESCE(NULLIF($1, ''), title),
-	    description = COALESCE(NULLIF($2, ''), description),
-	    completed = COALESCE(NULLIF($3, false), completed),
-	    completed_at = COALESCE(NULLIF($3, false), now())
-	WHERE id = $4
-	`
+    UPDATE task
+    SET title = COALESCE(NULLIF($1, ''), title),
+        description = COALESCE(NULLIF($2, ''), description),
+        completed = COALESCE(NULLIF($3, false), completed),
+        completed_at = CASE 
+            WHEN $3 = true AND completed = false THEN now()
+            WHEN $3 = false AND completed = true THEN NULL
+            ELSE completed_at
+        END
+    WHERE id = $4
+    `
 
 	_, err := s.conn.Exec(ctx, query, task.Title, task.Description, task.Completed, task.ID)
 	if err != nil {

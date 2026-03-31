@@ -48,6 +48,10 @@ func OptValidate(data string, isRequired bool, minLength, maxLength int) error {
 		return ErrFieldRequired
 	}
 
+	if !isRequired && data == "" {
+		return nil
+	}
+
 	if minLength >= len(data) || len(data) >= maxLength {
 		return ErrCorrectLength
 	}
