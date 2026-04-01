@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  todo-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: go run main.go
+    ports:
+      - 8080:8080
+    links:
+      - postgres
+    volumes:
+      - .:/go/src/app
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/todolist?sslmode=disable
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=todolist
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./migrate:/migrate
+
+  migrate:
+    image: migrate/migrate
+    command: up -database ${DATABASE_URL} -path /migrate
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/todolist?sslmode=disable
+    volumes:
+      - ./migrate:/migrate
