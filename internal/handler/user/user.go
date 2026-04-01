@@ -36,6 +36,8 @@ func NewHandlerUser(log *logrus.Logger, user ServiceUser) *HandlerUser {
 
 // user created: first name, last name, number phone
 func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	requestUser := models.User{}
 	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
@@ -43,7 +45,7 @@ func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.CreateUser(context.TODO(), requestUser.FirstName, requestUser.LastName, requestUser.NumberPhone)
+	id, err := h.service.CreateUser(ctx, requestUser.FirstName, requestUser.LastName, requestUser.NumberPhone)
 	if err != nil {
 		// TODO: организовать обработку конкретных ошибок из сервиса
 		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
@@ -55,6 +57,8 @@ func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	userID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
 	if err != nil {
 		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
@@ -62,7 +66,7 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userModel, err := h.service.GetUser(context.TODO(), userID)
+	userModel, err := h.service.GetUser(ctx, userID)
 	if err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "internal error")
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -73,6 +77,8 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerUser) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
@@ -80,7 +86,7 @@ func (h *HandlerUser) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.service.GetTasksByUser(context.TODO(), userID)
+	tasks, err := h.service.GetTasksByUser(ctx, userID)
 	if err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "internal error")
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -91,6 +97,8 @@ func (h *HandlerUser) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	requestUser := models.User{}
 	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
@@ -107,7 +115,7 @@ func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
 
 	requestUser.ID = userID
 
-	if err = h.service.EditInfoUser(context.TODO(), requestUser); err != nil {
+	if err = h.service.EditInfoUser(ctx, requestUser); err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "internal error")
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
@@ -117,6 +125,8 @@ func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerUser) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
@@ -124,7 +134,7 @@ func (h *HandlerUser) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.service.DeleteUser(context.TODO(), userID); err != nil {
+	if err = h.service.DeleteUser(ctx, userID); err != nil {
 		write.WriteError(w, http.StatusInternalServerError, "internal error")
 		h.log.Errorf("%s: %s", op, err.Error())
 		return

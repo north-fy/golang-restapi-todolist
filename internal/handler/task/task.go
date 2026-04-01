@@ -40,6 +40,8 @@ func NewHandlerTask(log *logrus.Logger, serv ServiceTask) *HandlerTask {
 }
 
 func (h *HandlerTask) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	task := models.Task{}
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -47,7 +49,7 @@ func (h *HandlerTask) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.CreateTask(context.TODO(), task)
+	id, err := h.service.CreateTask(ctx, task)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusBadRequest, err.Error())
@@ -58,6 +60,8 @@ func (h *HandlerTask) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -65,7 +69,7 @@ func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	task, err := h.service.GetTask(context.TODO(), id)
+	task, err := h.service.GetTask(ctx, id)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -76,6 +80,8 @@ func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 
@@ -102,7 +108,7 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 		Offset: offset,
 	}
 
-	tasks, err := h.service.GetTasksWithPagination(context.TODO(), pt)
+	tasks, err := h.service.GetTasksWithPagination(ctx, pt)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusBadRequest, err.Error())
@@ -113,6 +119,8 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 }
 
 func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -120,7 +128,7 @@ func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	tasks, err := h.service.GetTasksByUser(context.TODO(), id)
+	tasks, err := h.service.GetTasksByUser(ctx, id)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusInternalServerError, err.Error())
@@ -131,6 +139,8 @@ func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *HandlerTask) HandleEditTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -146,7 +156,7 @@ func (h *HandlerTask) HandleEditTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task.ID = id
-	if err = h.service.EditTask(context.TODO(), task); err != nil {
+	if err = h.service.EditTask(ctx, task); err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -156,6 +166,8 @@ func (h *HandlerTask) HandleEditTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerTask) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
@@ -163,7 +175,7 @@ func (h *HandlerTask) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.service.DeleteTask(context.TODO(), id); err != nil {
+	if err = h.service.DeleteTask(ctx, id); err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
 		write.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
