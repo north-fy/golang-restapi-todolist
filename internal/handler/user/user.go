@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,21 +35,25 @@ func NewHandlerUser(log *logrus.Logger, user ServiceUser) *HandlerUser {
 	}
 }
 
-// user created: first name, last name, number phone
 func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	requestUser := models.User{}
 	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
-		h.log.Errorf("%s: %s", op, err.Error())
+		h.log.Errorf("%s: %s", op, models.ErrBadRequest.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	id, err := h.service.CreateUser(ctx, requestUser.FirstName, requestUser.LastName, requestUser.NumberPhone)
 	if err != nil {
-		// TODO: организовать обработку конкретных ошибок из сервиса
-		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
+		if errors.As(err, &models.ErrTargetExist) || errors.As(err, &models.ErrBadRequest) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
@@ -61,14 +66,20 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
 	if err != nil {
-		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
 
 	userModel, err := h.service.GetUser(ctx, userID)
 	if err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "internal error")
+		if errors.As(err, &models.ErrInvalidID) {
+			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
+			h.log.Errorf("%s: %s", op, err.Error())
+			return
+		}
+
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
@@ -77,11 +88,13 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerUser) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
+	// TODO: переделать функцию, так не должно работать!
+
 	ctx := r.Context()
 
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
@@ -101,14 +114,14 @@ func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
 
 	requestUser := models.User{}
 	if err := json.NewDecoder(r.Body).Decode(&requestUser); err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "bad request for create user")
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
 
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
@@ -116,7 +129,13 @@ func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
 	requestUser.ID = userID
 
 	if err = h.service.EditInfoUser(ctx, requestUser); err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "internal error")
+		if models.IsErrValidate(err) || errors.As(err, &models.ErrInvalidID) {
+			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
+			h.log.Errorf("%s: %s", op, err.Error())
+			return
+		}
+
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
@@ -129,13 +148,19 @@ func (h *HandlerUser) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
-		write.WriteError(w, http.StatusBadRequest, "bad request for get user")
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
 
 	if err = h.service.DeleteUser(ctx, userID); err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "internal error")
+		if errors.As(err, &models.ErrInvalidID) {
+			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
+			h.log.Errorf("%s: %s", op, err.Error())
+			return
+		}
+
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}

@@ -1,6 +1,10 @@
 package validate
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
+)
 
 const (
 	// Filter by name
@@ -17,11 +21,11 @@ const (
 // TODO: зарефакторить код в одну функцию
 func ValidateName(data string) error {
 	if data == "" && isRequiredName {
-		return ErrFieldRequired
+		return models.ErrFieldRequired
 	}
 
 	if minLengthName >= len(data) || len(data) >= maxLengthName {
-		return ErrCorrectLength
+		return models.ErrCorrectLength
 	}
 
 	return nil
@@ -29,15 +33,15 @@ func ValidateName(data string) error {
 
 func ValidateNumber(data string) error {
 	if data == "" && isRequiredNumber {
-		return ErrFieldRequired
+		return models.ErrFieldRequired
 	}
 
 	if minLengthNumber >= len(data) || len(data) >= maxLengthNumber {
-		return ErrCorrectLength
+		return models.ErrCorrectLength
 	}
 
 	if !strings.HasPrefix(data, "+") {
-		return ErrCorrectNumber
+		return models.ErrCorrectNumber
 	}
 
 	return nil
@@ -45,7 +49,7 @@ func ValidateNumber(data string) error {
 
 func OptValidate(data string, isRequired bool, minLength, maxLength int) error {
 	if data == "" && isRequired {
-		return ErrFieldRequired
+		return models.ErrFieldRequired
 	}
 
 	if !isRequired && data == "" {
@@ -53,7 +57,7 @@ func OptValidate(data string, isRequired bool, minLength, maxLength int) error {
 	}
 
 	if minLength >= len(data) || len(data) >= maxLength {
-		return ErrCorrectLength
+		return models.ErrCorrectLength
 	}
 
 	return nil

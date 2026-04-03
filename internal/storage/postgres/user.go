@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
 	"github.com/pkg/errors"
@@ -25,7 +27,7 @@ func (s *Storage) CreateUser(ctx context.Context, firstName, lastName, numberPho
 
 	var id int
 	if err := s.conn.QueryRow(ctx, query, firstName, lastName, numberPhone).Scan(&id); err != nil {
-		return 0, errors.Errorf("%s: %s", op, err.Error())
+		return 0, fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	return id, nil
@@ -40,7 +42,11 @@ func (s *Storage) GetUser(ctx context.Context, id int) (models.User, error) {
 
 	user := models.User{}
 	if err := s.conn.QueryRow(ctx, query, id).Scan(&user.FirstName, &user.LastName, &user.NumberPhone); err != nil {
-		return models.User{}, errors.Errorf("%s: %s", op, err.Error())
+		if errors.As(err, &sql.ErrNoRows) {
+			return models.User{}, models.ErrNoRows
+		}
+
+		return models.User{}, fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	return user, nil
@@ -60,14 +66,14 @@ func (s *Storage) GetTasks(ctx context.Context, id int) ([]models.Task, error) {
 	tasks := []models.Task{}
 	rows, err := s.conn.Query(ctx, query, id)
 	if err != nil {
-		return nil, errors.Errorf("%s: %s", op, err.Error())
+		return nil, fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	for rows.Next() {
 		var task models.Task
 		if err := rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description,
 			&task.Completed, &task.CreatedAt, &task.CompletedAt); err != nil {
-			return nil, errors.Errorf("%s: %s", op, err.Error())
+			return nil, fmt.Errorf("%s: %s", op, err.Error())
 		}
 
 		tasks = append(tasks, task)
@@ -87,11 +93,11 @@ func (s *Storage) UpdateUser(ctx context.Context, user models.User) error {
 
 	ct, err := s.conn.Exec(ctx, query, user.FirstName, user.LastName, user.NumberPhone, user.ID)
 	if err != nil {
-		return errors.Errorf("%s: %s", op, err.Error())
+		return fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	if count := ct.RowsAffected(); count == 0 {
-		return errors.Errorf("%s: %s", op, "id not found")
+		return models.ErrNoRows
 	}
 
 	return nil
@@ -105,11 +111,11 @@ func (s *Storage) DeleteUser(ctx context.Context, id int) error {
 
 	ct, err := s.conn.Exec(ctx, query, id)
 	if err != nil {
-		return errors.Errorf("%s: %s", op, err.Error())
+		return fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	if count := ct.RowsAffected(); count == 0 {
-		return errors.Errorf("%s: %s", op, "id not found")
+		return models.ErrNoRows
 	}
 
 	return nil

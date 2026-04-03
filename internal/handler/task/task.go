@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -45,18 +46,30 @@ func (h *HandlerTask) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
 	task := models.Task{}
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	id, err := h.service.CreateTask(ctx, task)
 	if err != nil {
+		if models.IsErrValidate(err) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if errors.As(err, &models.ErrTargetExist) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	write.WriteJSON(w, http.StatusCreated, id)
+	write.WriteJSON(w, http.StatusCreated, map[string]int{"id": id})
 }
 
 func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) {
@@ -65,14 +78,21 @@ func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) 
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	task, err := h.service.GetTask(ctx, id)
+
 	if err != nil {
+		if errors.As(err, &models.ErrNoRows) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusInternalServerError, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -86,20 +106,22 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 	offsetStr := r.URL.Query().Get("offset")
 
 	if limitStr == "" || offsetStr == "" {
+		h.log.Errorf("%s: %s", op, models.ErrInvalidLimitOffset)
+		http.Error(w, models.ErrInvalidLimitOffset.Error(), http.StatusBadRequest)
 		return
 	}
 
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -110,8 +132,14 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 
 	tasks, err := h.service.GetTasksWithPagination(ctx, pt)
 	if err != nil {
+		if errors.As(err, &models.ErrInvalidLimitOffset) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -124,14 +152,21 @@ func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Requ
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		write.WriteError(w, http.StatusBadRequest, models.ErrBadRequest.Error())
 		return
 	}
 
 	tasks, err := h.service.GetTasksByUser(ctx, id)
+
 	if err != nil {
+		if errors.As(err, &models.ErrInvalidID) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusInternalServerError, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -144,25 +179,31 @@ func (h *HandlerTask) HandleEditTask(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	task := models.Task{}
 	if err = json.NewDecoder(r.Body).Decode(&task); err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	task.ID = id
 	if err = h.service.EditTask(ctx, task); err != nil {
+		if models.IsErrValidate(err) || errors.As(err, &models.ErrInvalidID) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusInternalServerError, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	write.WriteJSON(w, http.StatusOK, "success")
+	write.WriteJSON(w, http.StatusOK, map[string]string{"access": "success"})
 }
 
 func (h *HandlerTask) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
@@ -171,15 +212,21 @@ func (h *HandlerTask) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusBadRequest, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err = h.service.DeleteTask(ctx, id); err != nil {
+		if errors.As(err, &models.ErrInvalidID) {
+			h.log.Errorf("%s: %s", op, err.Error())
+			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
+			return
+		}
+
 		h.log.Errorf("%s: %s", op, err.Error())
-		write.WriteError(w, http.StatusInternalServerError, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	write.WriteJSON(w, http.StatusOK, "success")
+	write.WriteJSON(w, http.StatusOK, map[string]string{"access": "success"})
 }
