@@ -18,7 +18,7 @@ const op = "handler/user/user"
 type ServiceUser interface {
 	CreateUser(ctx context.Context, firstName, lastName, numberPhone string) (int, error)
 	GetUser(ctx context.Context, id int) (models.User, error)
-	GetTasksByUser(ctx context.Context, id int) ([]models.Task, error)
+	GetUsersWithPagination(ctx context.Context, pt models.Pagination) ([]models.User, error)
 	EditInfoUser(ctx context.Context, user models.User) error
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -87,26 +87,46 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 	write.WriteJSON(w, http.StatusOK, userModel)
 }
 
-func (h *HandlerUser) HandleGetTasks(w http.ResponseWriter, r *http.Request) {
+func (h *HandlerUser) HandleGetUsersWithPagination(w http.ResponseWriter, r *http.Request) {
 	// TODO: переделать функцию, так не должно работать!
-
 	ctx := r.Context()
 
-	userID, err := strconv.Atoi(r.PathValue("id"))
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+
+	if limitStr == "" || offsetStr == "" {
+		h.log.Errorf("%s: %s", op, models.ErrInvalidLimitOffset)
+		http.Error(w, models.ErrInvalidLimitOffset.Error(), http.StatusBadRequest)
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
+		h.log.Errorf("%s: %s", op, err.Error())
 		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
-		h.log.Errorf("%s: %s", op, err.Error())
 		return
 	}
 
-	tasks, err := h.service.GetTasksByUser(ctx, userID)
+	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
-		write.WriteError(w, http.StatusInternalServerError, "internal error")
 		h.log.Errorf("%s: %s", op, err.Error())
+		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		return
 	}
 
-	write.WriteJSON(w, http.StatusOK, tasks)
+	pt := models.Pagination{
+		Limit:  limit,
+		Offset: offset,
+	}
+
+	users, err := h.service.GetUsersWithPagination(ctx, pt)
+	if err != nil {
+		h.log.Errorf("%s: %s", op, err.Error())
+		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	write.WriteJSON(w, http.StatusOK, []any{pt, users})
 }
 
 func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {

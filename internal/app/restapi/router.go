@@ -25,7 +25,7 @@ func (r *Route) ConfigureRouter(user *userhandler.HandlerUser, task *taskhandler
 	// endpoints users
 	r.mu.Handle("POST /users", MethodHandler("POST", user.HandleCreateUser))
 	r.mu.Handle("GET /users/{id}", MethodHandler("GET", user.HandleGetUser))
-	r.mu.Handle("GET /users", MethodHandler("GET", user.HandleGetTasks))
+	r.mu.Handle("GET /users", MethodHandler("GET", user.HandleGetUsersWithPagination))
 	r.mu.Handle("PATCH /users/{id}", MethodHandler("PATCH", user.HandleEditUser))
 	r.mu.Handle("DELETE /users/{id}", MethodHandler("DELETE", user.HandleDeleteUser))
 

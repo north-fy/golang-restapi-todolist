@@ -14,15 +14,10 @@ import (
 
 const op = "handler/task/task"
 
-type PaginationTask struct {
-	Limit  int
-	Offset int
-}
-
 type ServiceTask interface {
 	CreateTask(ctx context.Context, task models.Task) (int, error)
 	GetTask(ctx context.Context, taskID int) (models.Task, error)
-	GetTasksWithPagination(ctx context.Context, pt PaginationTask) ([]models.Task, error)
+	GetTasksWithPagination(ctx context.Context, pt models.Pagination) ([]models.Task, error)
 	GetTasksByUser(ctx context.Context, userID int) ([]models.Task, error)
 	EditTask(ctx context.Context, task models.Task) error
 	DeleteTask(ctx context.Context, taskID int) error
@@ -125,7 +120,7 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	pt := PaginationTask{
+	pt := models.Pagination{
 		Limit:  limit,
 		Offset: offset,
 	}
@@ -142,8 +137,8 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	write.WriteJSON(w, http.StatusOK, tasks)
+	
+	write.WriteJSON(w, http.StatusOK, []any{pt, tasks})
 }
 
 func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Request) {

@@ -22,7 +22,7 @@ const op = "service/user/user"
 type StorageUser interface {
 	CreateUser(ctx context.Context, firstName, lastName, numberPhone string) (int, error)
 	GetUser(ctx context.Context, id int) (models.User, error)
-	GetTasks(ctx context.Context, id int) ([]models.Task, error)
+	GetUsersWithPagination(ctx context.Context, pt models.Pagination) ([]models.User, error)
 	UpdateUser(ctx context.Context, user models.User) error
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -64,14 +64,14 @@ func (s *ServiceUser) GetUser(ctx context.Context, id int) (models.User, error) 
 	return user, nil
 }
 
-func (s *ServiceUser) GetTasksByUser(ctx context.Context, id int) ([]models.Task, error) {
-	tasks, err := s.storage.GetTasks(ctx, id)
+func (s *ServiceUser) GetUsersWithPagination(ctx context.Context, pt models.Pagination) ([]models.User, error) {
+	users, err := s.storage.GetUsersWithPagination(ctx, pt)
 	if err != nil {
 		s.log.Errorf("%s: %s", op, err.Error())
 		return nil, err
 	}
 
-	return tasks, nil
+	return users, nil
 }
 
 func (s *ServiceUser) EditInfoUser(ctx context.Context, user models.User) error {

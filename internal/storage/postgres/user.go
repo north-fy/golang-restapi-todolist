@@ -13,7 +13,7 @@ import (
 type StorageUser interface {
 	CreateUser(ctx context.Context, firstName, lastName, numberPhone string) (int, error)
 	GetUser(ctx context.Context, id int) (models.User, error)
-	GetTasks(ctx context.Context, id int) ([]models.Task, error)
+	GetUsersWithPagination(ctx context.Context, pt models.Pagination) ([]models.User, error)
 	UpdateUser(ctx context.Context, user models.User) error
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -52,34 +52,31 @@ func (s *Storage) GetUser(ctx context.Context, id int) (models.User, error) {
 	return user, nil
 }
 
-func (s *Storage) GetTasks(ctx context.Context, id int) ([]models.Task, error) {
+func (s *Storage) GetUsersWithPagination(ctx context.Context, pt models.Pagination) ([]models.User, error) {
 	query := `
 	SELECT
-		task.id, task.user_id, task.title, task.description, 
-		task.completed, task.created_at, task.completed_at
-	FROM
-	    users INNER JOIN task
-		ON users.id = task.user_id
-	WHERE users.id = $1
+	    id, first_name, last_name, number_phone
+	FROM users
+	LIMIT $1
+	OFFSET $2
 	`
 
-	tasks := []models.Task{}
-	rows, err := s.conn.Query(ctx, query, id)
+	users := make([]models.User, 0)
+	rows, err := s.conn.Query(ctx, query, pt.Limit, pt.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %s", op, err.Error())
 	}
 
 	for rows.Next() {
-		var task models.Task
-		if err := rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description,
-			&task.Completed, &task.CreatedAt, &task.CompletedAt); err != nil {
+		var oneUser models.User
+		if err := rows.Scan(&oneUser.ID, &oneUser.FirstName, &oneUser.LastName, &oneUser.NumberPhone); err != nil {
 			return nil, fmt.Errorf("%s: %s", op, err.Error())
 		}
 
-		tasks = append(tasks, task)
+		users = append(users, oneUser)
 	}
 
-	return tasks, nil
+	return users, nil
 }
 
 func (s *Storage) UpdateUser(ctx context.Context, user models.User) error {
