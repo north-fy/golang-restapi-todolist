@@ -47,7 +47,7 @@ func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.service.CreateUser(ctx, requestUser.FirstName, requestUser.LastName, requestUser.NumberPhone)
 	if err != nil {
-		if errors.As(err, &models.ErrTargetExist) || errors.As(err, &models.ErrBadRequest) {
+		if errors.Is(err, models.ErrTargetExist) || errors.Is(err, models.ErrBadRequest) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -73,7 +73,7 @@ func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	userModel, err := h.service.GetUser(ctx, userID)
 	if err != nil {
-		if errors.As(err, &models.ErrInvalidID) {
+		if errors.Is(err, models.ErrInvalidID) {
 			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 			h.log.Errorf("%s: %s", op, err.Error())
 			return
@@ -149,7 +149,7 @@ func (h *HandlerUser) HandleEditUser(w http.ResponseWriter, r *http.Request) {
 	requestUser.ID = userID
 
 	if err = h.service.EditInfoUser(ctx, requestUser); err != nil {
-		if models.IsErrValidate(err) || errors.As(err, &models.ErrInvalidID) {
+		if models.IsErrValidate(err) || errors.Is(err, models.ErrInvalidID) {
 			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 			h.log.Errorf("%s: %s", op, err.Error())
 			return
@@ -174,7 +174,7 @@ func (h *HandlerUser) HandleDeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = h.service.DeleteUser(ctx, userID); err != nil {
-		if errors.As(err, &models.ErrInvalidID) {
+		if errors.Is(err, models.ErrInvalidID) {
 			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 			h.log.Errorf("%s: %s", op, err.Error())
 			return

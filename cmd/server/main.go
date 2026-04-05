@@ -17,7 +17,7 @@ func main() {
 	cfg := config.MustLoadConfig(pathToConfig)
 	log := logrus.New()
 
-	serv := restapi.NewRestAPIServer(log, cfg.StorageCfg)
+	serv := restapi.NewRestAPIServer(log, cfg.StorageCfg, cfg.RedisCfg)
 	addr := fmt.Sprintf("%s:%d", serverHost, cfg.ServerCfg.Port)
 
 	log.Info("Server is created on localhost:8080")

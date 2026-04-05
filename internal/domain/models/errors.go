@@ -22,5 +22,5 @@ var (
 )
 
 func IsErrValidate(Err error) bool {
-	return errors.As(Err, &ErrFieldRequired) || errors.As(Err, &ErrCorrectLength) || errors.As(Err, &ErrCorrectNumber)
+	return errors.Is(Err, ErrFieldRequired) || errors.Is(Err, ErrCorrectLength) || errors.Is(Err, ErrCorrectNumber)
 }

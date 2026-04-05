@@ -42,7 +42,7 @@ func (s *Storage) Set(ctx context.Context, key string, value interface{}) error 
 
 func (s *Storage) Get(ctx context.Context, key string, obj interface{}) error {
 	res := s.client.Get(ctx, key)
-	if err := res.Scan(obj); err != nil {
+	if err := res.Scan(&obj); err != nil {
 		return err
 	}
 

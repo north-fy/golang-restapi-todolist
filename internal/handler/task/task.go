@@ -53,7 +53,7 @@ func (h *HandlerTask) HandleCreateTask(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if errors.As(err, &models.ErrTargetExist) {
+		if errors.Is(err, models.ErrTargetExist) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusConflict)
 			return
@@ -80,7 +80,7 @@ func (h *HandlerTask) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) 
 	task, err := h.service.GetTask(ctx, id)
 
 	if err != nil {
-		if errors.As(err, &models.ErrNoRows) {
+		if errors.Is(err, models.ErrNoRows) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -127,7 +127,7 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 
 	tasks, err := h.service.GetTasksWithPagination(ctx, pt)
 	if err != nil {
-		if errors.As(err, &models.ErrInvalidLimitOffset) {
+		if errors.Is(err, models.ErrInvalidLimitOffset) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -137,7 +137,7 @@ func (h *HandlerTask) HandleGetPaginationTasks(w http.ResponseWriter, r *http.Re
 		http.Error(w, models.ErrInternal.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	write.WriteJSON(w, http.StatusOK, []any{pt, tasks})
 }
 
@@ -154,7 +154,7 @@ func (h *HandlerTask) HandleGetTasksByUserID(w http.ResponseWriter, r *http.Requ
 	tasks, err := h.service.GetTasksByUser(ctx, id)
 
 	if err != nil {
-		if errors.As(err, &models.ErrInvalidID) {
+		if errors.Is(err, models.ErrInvalidID) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -187,7 +187,7 @@ func (h *HandlerTask) HandleEditTask(w http.ResponseWriter, r *http.Request) {
 
 	task.ID = id
 	if err = h.service.EditTask(ctx, task); err != nil {
-		if models.IsErrValidate(err) || errors.As(err, &models.ErrInvalidID) {
+		if models.IsErrValidate(err) || errors.Is(err, models.ErrInvalidID) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -212,7 +212,7 @@ func (h *HandlerTask) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = h.service.DeleteTask(ctx, id); err != nil {
-		if errors.As(err, &models.ErrInvalidID) {
+		if errors.Is(err, models.ErrInvalidID) {
 			h.log.Errorf("%s: %s", op, err.Error())
 			http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 			return

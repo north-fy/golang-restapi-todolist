@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
-	"github.com/north-fy/golang-restapi-todolist/internal/handler/task"
 	"github.com/north-fy/golang-restapi-todolist/pkg/validate"
 	"github.com/sirupsen/logrus"
 )
@@ -25,7 +24,7 @@ const op = "service/task/task"
 type StorageTask interface {
 	InsertTask(ctx context.Context, task models.Task) (int, error)
 	SelectTask(ctx context.Context, taskID int) (models.Task, error)
-	SelectTasksWithPagination(ctx context.Context, pt task.PaginationTask) ([]models.Task, error)
+	SelectTasksWithPagination(ctx context.Context, pt models.Pagination) ([]models.Task, error)
 	SelectTasksByUser(ctx context.Context, userID int) ([]models.Task, error)
 	UpdateTask(ctx context.Context, task models.Task) error
 	DeleteTask(ctx context.Context, taskID int) error
@@ -73,7 +72,7 @@ func (s *ServiceTask) GetTask(ctx context.Context, taskID int) (models.Task, err
 	return oneTask, nil
 }
 
-func (s *ServiceTask) GetTasksWithPagination(ctx context.Context, pt task.PaginationTask) ([]models.Task, error) {
+func (s *ServiceTask) GetTasksWithPagination(ctx context.Context, pt models.Pagination) ([]models.Task, error) {
 	tasks, err := s.storage.SelectTasksWithPagination(ctx, pt)
 	if err != nil {
 		s.log.Errorf("%s: %s", op, err.Error())

@@ -57,7 +57,7 @@ func (h *HandlerStats) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 
 		resp, err := h.service.GetStatisticsByUser(ctx, id)
 		if err != nil {
-			if errors.As(err, &models.ErrInvalidID) {
+			if errors.Is(err, models.ErrInvalidID) {
 				h.log.Error(err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
