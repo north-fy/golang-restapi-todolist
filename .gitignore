@@ -1,4 +1,5 @@
 .idea
 ./config/server/config.yaml
+./config/redis/config.yaml
 .env
 main.exe

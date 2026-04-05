@@ -129,6 +129,7 @@ completed == false  →   completed_at IS NULL
 - migrate
 - testify
 - mockery
+- redis
 
 ## TODO
 - Сделать json вывод

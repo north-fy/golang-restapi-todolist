@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/north-fy/golang-restapi-todolist/internal/domain/models"
-	"github.com/north-fy/golang-restapi-todolist/internal/handler/task"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +58,7 @@ func (s *Storage) SelectTask(ctx context.Context, taskID int) (models.Task, erro
 	return oneTask, nil
 }
 
-func (s *Storage) SelectTasksWithPagination(ctx context.Context, pt task.PaginationTask) ([]models.Task, error) {
+func (s *Storage) SelectTasksWithPagination(ctx context.Context, pt models.Pagination) ([]models.Task, error) {
 	query := `
 	SELECT id, title, description, user_id, completed, created_at, completed_at
 	FROM task
@@ -159,4 +158,57 @@ func (s *Storage) DeleteTask(ctx context.Context, taskID int) error {
 	}
 
 	return nil
+}
+
+func (s *Storage) SelectAllTasks(ctx context.Context) ([]models.Task, error) {
+	query := `
+	SELECT id, title, description, user_id, completed, created_at, completed_at
+	FROM task
+	ORDER BY id
+	`
+
+	tasks := make([]models.Task, 0)
+	rows, err := s.conn.Query(ctx, query)
+	if err != nil {
+		return nil, errors.Errorf("%s: %s", op, err.Error())
+	}
+
+	for rows.Next() {
+		var oneTask models.Task
+		if err = rows.Scan(&oneTask.ID, &oneTask.Title, &oneTask.Description,
+			&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt); err != nil {
+			return tasks, fmt.Errorf("%s: %s", op, err.Error())
+		}
+
+		tasks = append(tasks, oneTask)
+	}
+
+	return tasks, nil
+}
+
+func (s *Storage) SelectTasksByTime(ctx context.Context, timeFlt models.FilterTime) ([]models.Task, error) {
+	query := `
+	SELECT id, title, description, user_id, completed, created_at, completed_at
+	FROM task
+	WHERE created_at BETWEEN $1 AND $2
+	ORDER BY id
+	`
+
+	tasks := make([]models.Task, 0)
+	rows, err := s.conn.Query(ctx, query, timeFlt.Start, timeFlt.End)
+	if err != nil {
+		return nil, errors.Errorf("%s: %s", op, err.Error())
+	}
+
+	for rows.Next() {
+		var oneTask models.Task
+		if err = rows.Scan(&oneTask.ID, &oneTask.Title, &oneTask.Description,
+			&oneTask.UserID, &oneTask.Completed, &oneTask.CreatedAt, &oneTask.CompletedAt); err != nil {
+			return tasks, fmt.Errorf("%s: %s", op, err.Error())
+		}
+
+		tasks = append(tasks, oneTask)
+	}
+
+	return tasks, nil
 }

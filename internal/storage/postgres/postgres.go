@@ -22,7 +22,6 @@ func NewStorage(cfg config.StorageConfig) *Storage {
 	if err != nil {
 		panic(err)
 	}
-	//defer conn.Close(context.TODO())
 
 	if err = conn.Ping(context.TODO()); err != nil {
 		panic(err)
@@ -31,4 +30,8 @@ func NewStorage(cfg config.StorageConfig) *Storage {
 	return &Storage{
 		conn: conn,
 	}
+}
+
+func (s *Storage) Close(ctx context.Context) {
+	_ = s.conn.Close(ctx)
 }
