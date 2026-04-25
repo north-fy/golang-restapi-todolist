@@ -9,17 +9,16 @@ import (
 )
 
 const (
-	pathToConfig string = "./config/server/config.yaml"
-	serverHost   string = "localhost"
+	envName = ".env"
 )
 
 func main() {
-	cfg := config.MustLoadConfig(pathToConfig)
+	cfg := config.MustLoadConfig(envName)
 	log := logrus.New()
 
 	serv := restapi.NewRestAPIServer(log, cfg.StorageCfg, cfg.RedisCfg)
-	addr := fmt.Sprintf("%s:%d", serverHost, cfg.ServerCfg.Port)
+	addr := fmt.Sprintf("%s:%d", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
 
-	log.Info("Server is created on localhost:8080")
+	log.Infof("Server is created on %s:%d", cfg.ServerCfg.Host, cfg.ServerCfg.Port)
 	serv.Run(addr)
 }

@@ -25,6 +25,13 @@ func NewStorage(cfg config.RedisConfig) *Storage {
 
 	client := redis.NewClient(opt)
 
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		panic(fmt.Sprintf("Failed to connect to Redis: %v", err))
+	}
+
 	return &Storage{
 		client: client,
 		ttl:    cfg.TTL,

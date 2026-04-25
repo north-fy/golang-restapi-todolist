@@ -1,4 +1,8 @@
-DATABASE_URL = postgresql://postgres:postgres@localhost:5432/restapi_todo?sslmode=disable
+# Удалите эти две строки:
+# include .env
+# export ${cat .env}
+
+DATABASE_URL = postgresql://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DBNAME}?sslmode=disable
 MIGRATION_DIR = migrations
 
 MIGRATE := $(shell command -v migrate 2> /dev/null)
@@ -14,15 +18,11 @@ create:
 
 .PHONY: up
 up:
-	@echo "Применение миграций..."
 	@migrate -database "$(DATABASE_URL)" -path $(MIGRATION_DIR) up
-	@echo "✓ Миграции применены"
 
 .PHONY: down
 down:
-	@echo "Откат последней миграции..."
 	@migrate -database "$(DATABASE_URL)" -path $(MIGRATION_DIR) down 1
-	@echo "✓ Миграция откачена"
 
 .PHONY: status
 status:
@@ -30,7 +30,13 @@ status:
 
 .PHONY: build
 build:
-	go build ./cmd/server/main.go
+	echo "Server building..."
+	go build -o main ./cmd/server/
+	echo "Server built successfully"
+
+.PHONY: build-run
+build-run: build
+	@./main
 
 .PHONY: test
 test:

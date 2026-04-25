@@ -64,7 +64,7 @@ func (h *HandlerUser) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *HandlerUser) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
+	userID, err := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/api/users/"))
 	if err != nil {
 		http.Error(w, models.ErrBadRequest.Error(), http.StatusBadRequest)
 		h.log.Errorf("%s: %s", op, err.Error())

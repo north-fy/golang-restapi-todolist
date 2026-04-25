@@ -1,14 +1,16 @@
-FROM golang:1.9.2-alpine3.6
-
+FROM golang:1.26.1-bookworm AS builder
 WORKDIR /app
-
 COPY go.mod go.sum ./
 RUN go mod download
-
 COPY . .
-
-RUN go build -o main
-
+RUN go build -o main ./cmd/server/
 EXPOSE 8080
+CMD ["/app/main"]
 
-CMD ["./main"]
+#FROM alpine:3.23
+#WORKDIR /app
+#COPY --from=builder /app/main /app
+#EXPOSE 8080
+#CMD ["/app/main"]
+
+
