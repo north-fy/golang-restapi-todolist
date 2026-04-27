@@ -132,9 +132,3 @@ completed == false  →   completed_at IS NULL
 - redis
 
 ## TODO
-- Сделать json вывод
-- Исправить передачу id в get /users/{id}
-- Исправить в patch /users/{id} length is not correct
-- исправить скан в postgres/task методах
--  "error": "storage/postgres: can't scan into dest[6] (col: completed_at): cannot scan NULL into *time.Time"
-- короче все методы в task хуйня, переделывай

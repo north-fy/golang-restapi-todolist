@@ -44,12 +44,13 @@ func NewServiceStats(log *logrus.Logger, storage StorageStats, cache *redis.Stor
 	return &ServiceStats{
 		log:     log,
 		storage: storage,
+		cache:   cache,
 	}
 }
 
 func (s *ServiceStats) GetStatisticsAll(ctx context.Context) (models.ResponseStats, error) {
 	resp := models.ResponseStats{}
-	if err := s.cache.Get(ctx, models.KeyFormatALl, &resp); err != nil {
+	if err := s.cache.Get(ctx, models.KeyFormatALl, resp); err != nil {
 		s.log.Error(err)
 
 		tasks, err := s.storage.SelectAllTasks(ctx)

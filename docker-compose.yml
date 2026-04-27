@@ -20,8 +20,8 @@ services:
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      REDIS_USER: north
-      REDIS_PASSWORD: 1111
+      REDIS_USER: admin
+      REDIS_PASSWORD: admin
       REDIS_DB: 0
       REDIS_TTL: 60s
 
@@ -63,6 +63,7 @@ services:
 
   redis:
     image: redis:alpine
+    command: redis-server --requirepass 1111 --appendonly yes --aclfile /usr/local/etc/redis/users.acl
     ports:
       - "6379:6379"
     volumes:

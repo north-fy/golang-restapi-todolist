@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -18,12 +17,12 @@ type Storage struct {
 }
 
 func NewStorage(cfg config.RedisConfig) *Storage {
-	opt, err := redis.ParseURL(fmt.Sprintf("redis://%s:%s@%s:%d/%d", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DB))
-	if err != nil {
-		panic(err)
-	}
-
-	client := redis.NewClient(opt)
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Password: cfg.Password,
+		DB:       cfg.DB,
+		Username: cfg.User,
+	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -32,28 +31,25 @@ func NewStorage(cfg config.RedisConfig) *Storage {
 		panic(fmt.Sprintf("Failed to connect to Redis: %v", err))
 	}
 
+	panic("123")
+
 	return &Storage{
 		client: client,
 		ttl:    cfg.TTL,
 	}
 }
 
-func (s *Storage) Set(ctx context.Context, key string, value interface{}) error {
-	data, err := json.Marshal(value)
-	if err != nil {
-		return err
-	}
-
-	return s.client.Set(ctx, key, data, s.ttl).Err()
+func (s *Storage) Set(ctx context.Context, key string, value any) error {
+	return s.client.Set(ctx, key, value, s.ttl).Err()
 }
 
-func (s *Storage) Get(ctx context.Context, key string, obj interface{}) error {
+func (s *Storage) Get(ctx context.Context, key string, result interface{}) error {
 	res := s.client.Get(ctx, key)
-	if err := res.Scan(&obj); err != nil {
+	if err := res.Err(); err != nil {
 		return err
 	}
 
-	return nil
+	return res.Scan(result)
 }
 
 func (s *Storage) Close() error {
